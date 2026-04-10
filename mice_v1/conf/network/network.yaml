@@ -1,0 +1,13 @@
+defaults:
+  - weight: from_conn  # 1. 默认去 ./weight 文件夹下找 random.yaml
+  - synapse: alpha
+  - input_layer: identical
+  - _self_          # 2. 【极其重要】保留当前文件（本文件）下方的参数！
+
+name: network
+conn_path: "/home/liuxingyu/dataset/mice_unnamed/x_2000_2200_z_2200_2400_Total_4166_HybridGu"
+#conn_path: "/home/liuxingyu/dataset/mice_unnamed"
+glif_dir: "/home/liuxingyu/mice_unnamed_new/glif_models_VISp"
+#use_dexp_synapse_times: true
+synapse_impl: hetersyn
+n_neuron: 4166

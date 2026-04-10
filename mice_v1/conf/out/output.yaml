@@ -1,0 +1,3 @@
+prediction_window_ratio: 0.1
+num_output_neuron: 20
+output_type: "rate"

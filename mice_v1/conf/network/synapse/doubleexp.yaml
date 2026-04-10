@@ -1,0 +1,14 @@
+type: doubleexp
+tau_syn_rise_ee: 2.114
+tau_syn_decay_ee: 2.124
+tau_syn_rise_ei: 2.114
+tau_syn_decay_ei: 2.124
+tau_syn_rise_ie: 2.114
+tau_syn_decay_ie: 2.124
+tau_syn_rise_ii: 2.114
+tau_syn_decay_ii: 2.124
+
+latency_ee: 2.25
+latency_ei: 2.25
+latency_ie: 2.25
+latency_ii: 2.25

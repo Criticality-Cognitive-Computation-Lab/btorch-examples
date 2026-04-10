@@ -1,0 +1,7 @@
+name: sim
+T: 1000
+dt: 1.0
+n_neuron: 4166
+batch_size: 1
+
+psc_time_range_ms: [200, None]

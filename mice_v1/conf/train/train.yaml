@@ -1,0 +1,18 @@
+defaults:
+  # --- 关键修改开始 ---
+  # 语法含义：加载 cost/rate.yaml，并将其内容挂载到当前配置的 costs.rate 节点下
+  - cost@costs.rate: rate
+  
+  # 语法含义：加载 cost/voltage.yaml，并将其内容挂载到 costs.voltage 节点下
+  - cost@costs.voltage: voltage
+  # --- 关键修改结束 ---
+  
+  - _self_
+
+name: train
+epochs: 100
+batch_size: 64
+learning_rate: 1e-3
+momentum: 0.9
+optimizer: "adam"
+seed: 43
