@@ -847,7 +847,7 @@ def visualize_results(result, model_param, cfg, connectome_data, selected_neuron
     root_id_converter = simple_id_to_root_id_func(neurons)
     selected_root_ids = root_id_converter(selected_neurons)
 
-    total_neurons = result["neuron"]["v"].shape[1]
+    total_neurons = result["neuron"]["v"].shape[-1]
     max_neurons = getattr(cfg, 'max_neurons_raster', None)
     
     if max_neurons is None:

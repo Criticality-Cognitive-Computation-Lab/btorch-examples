@@ -300,7 +300,7 @@ def plot_population_by_field(
         
     # 2. 处理 3D 数据 [Time, Batch, Neurons] -> [Time, Neurons]
     # 判据：第三维 > 10 (认为是 Neurons)，区分于 [Time, Neurons, Lines] (Lines通常很少)
-    elif raw_data.ndim == 3 and raw_data.shape[2] > 10:
+    elif raw_data.ndim == 3 and raw_data.shape[2] > 4:
         # print(f"Auto-slicing batch from 3D: {raw_data.shape} -> select batch {batch_index}")
         data = raw_data[:, batch_index, :] 
         
@@ -435,7 +435,7 @@ def plot_population_by_field_single_plot(
     if raw_data.ndim == 4:
         data = raw_data[:, batch_index, :, :]
     # 2. 3D -> 2D (Heuristic)
-    elif raw_data.ndim == 3 and raw_data.shape[2] > 10:
+    elif raw_data.ndim == 3 and raw_data.shape[2] > 4:
         data = raw_data[:, batch_index, :] 
     else:
         data = raw_data

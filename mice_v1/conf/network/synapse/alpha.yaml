@@ -1,5 +1,0 @@
-type: alpha
-tau_syn_ee: 2.25
-tau_syn_ie: 5.5  #8.5
-tau_syn_ei: 2.8
-tau_syn_ii: 5.8

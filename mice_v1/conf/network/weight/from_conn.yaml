@@ -1,7 +1,0 @@
-type: from_conn
-
-weight_ee_scale: 1.0
-weight_ei_scale: 1.0
-weight_ie_scale: 1.0
-weight_ii_scale: 1.0
-#weight_path: "/home/liuxingyu/dataset/mice_unnamed/weight_matrix.h5"

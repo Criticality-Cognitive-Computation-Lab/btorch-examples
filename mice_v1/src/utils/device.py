@@ -1,3 +1,6 @@
+import torch
+
+
 def detect_device():
     """
     自动检测可用设备并返回设备信息

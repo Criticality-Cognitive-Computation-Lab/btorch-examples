@@ -1,3 +1,0 @@
-type: rate
-rate_data_path: "/home/liuxingyu/dataset/mice_unnamed/rate_data.pkl"
-rate_weight: 1.0

@@ -27,13 +27,20 @@ class ExperimentRunner:
         self.train_loader, self.test_loader = dataloaders
         self.device = cfg.device
 
+    def _resolve_visualize_flag(self):
+        if "visualize" in self.cfg:
+            return bool(self.cfg.visualize)
+        if "generator" in self.cfg and "visualize" in self.cfg.generator:
+            return bool(self.cfg.generator.visualize)
+        return True
+
     def run(self):
         """主入口：决定跑什么模式"""
         if is_train_mode(self.cfg):
             self.run_training()
         else:
             #breakpoint()
-            self.run_simulation(visualize = self.cfg.generator.visualize)
+            self.run_simulation(visualize=self._resolve_visualize_flag())
 
     def _init_model_states(self, batch_size=None):
         """初始化模型的所有状态变量"""
