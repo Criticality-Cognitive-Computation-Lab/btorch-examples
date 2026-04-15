@@ -1,0 +1,26 @@
+{
+  "coeffs": {
+    "C": 1.0,
+    "th_inf": 1.0,
+    "asc_amp_array": [
+      1.0,
+      1.0
+    ]
+  },
+  "C": 1e-10,
+  "R_input": 120000000.0,
+  "spike_cut_length": 2,
+  "dt": 5e-05,
+  "dt_multiplier": 1.0,
+  "El_reference": -0.068,
+  "El": 0.0,
+  "th_inf": 0.018,
+  "asc_tau_array": [
+    0.008,
+    0.03
+  ],
+  "asc_amp_array": [
+    0.0,
+    0.0
+  ]
+}
