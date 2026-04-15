@@ -1,0 +1,155 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 650px;
+                 background-color: #1E1E1E;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"borderWidth": 2, "color": {"background": "#FFFF00", "border": "#FFFFFF"}, "font": {"color": "white"}, "id": 3, "label": "SPIKE!", "physics": false, "shape": "dot", "size": 15, "title": "Type: tutorial_pyr", "x": 0, "y": 0}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 6, "label": "6", "physics": false, "shape": "dot", "size": 5, "title": "ID: 6\nType: tutorial_pyr\nV: -55.91mV", "x": 300.0, "y": 0.0}, {"borderWidth": 2, "color": {"background": "#FFFF00", "border": "#FFFFFF"}, "font": {"color": "white"}, "id": 7, "label": "\u26a1", "physics": false, "shape": "dot", "size": 5, "title": "ID: 7\nType: tutorial_pyr\nV: -70.00mV", "x": 296.11507879157267, "y": 48.123384256104835}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 9, "label": "9", "physics": false, "shape": "dot", "size": 5, "title": "ID: 9\nType: tutorial_pyr\nV: -57.22mV", "x": 284.56093258492854, "y": 95.00039813809073}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 11, "label": "11", "physics": false, "shape": "dot", "size": 5, "title": "ID: 11\nType: tutorial_pyr\nV: -55.13mV", "x": 265.63680769769076, "y": 139.41695160983858}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 15, "label": "15", "physics": false, "shape": "dot", "size": 5, "title": "ID: 15\nType: tutorial_pyr\nV: -50.40mV", "x": 239.8328290240283, "y": 180.22267926743072}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 18, "label": "18", "physics": false, "shape": "dot", "size": 5, "title": "ID: 18\nType: tutorial_pyr\nV: -50.70mV", "x": 207.81730605734867, "y": 216.36073419885196}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 19, "label": "19", "physics": false, "shape": "dot", "size": 5, "title": "ID: 19\nType: tutorial_pyr\nV: -51.69mV", "x": 170.4194240254662, "y": 246.89515976387295}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 25, "label": "25", "physics": false, "shape": "dot", "size": 5, "title": "ID: 25\nType: tutorial_pyr\nV: -50.76mV", "x": 128.6077684287537, "y": 271.03513037939575}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 27, "label": "27", "physics": false, "shape": "dot", "size": 5, "title": "ID: 27\nType: tutorial_pyr\nV: -56.42mV", "x": 83.46523918445865, "y": 288.15543348665335}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 29, "label": "29", "physics": false, "shape": "dot", "size": 5, "title": "ID: 29\nType: tutorial_pyr\nV: -53.27mV", "x": 36.16100408766913, "y": 297.8126622280718}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 34, "label": "34", "physics": false, "shape": "dot", "size": 5, "title": "ID: 34\nType: tutorial_pyr\nV: -53.45mV", "x": -12.079782020441767, "y": 299.7566994519699}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 35, "label": "35", "physics": false, "shape": "dot", "size": 5, "title": "ID: 35\nType: tutorial_pyr\nV: -63.42mV", "x": -60.00770811945664, "y": 293.93719561540706}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 39, "label": "39", "physics": false, "shape": "dot", "size": 5, "title": "ID: 39\nType: tutorial_pyr\nV: -53.68mV", "x": -106.38146609885568, "y": 280.50487281089795}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 41, "label": "41", "physics": false, "shape": "dot", "size": 5, "title": "ID: 41\nType: tutorial_pyr\nV: -54.79mV", "x": -149.99999998604778, "y": 259.8076211433869}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 44, "label": "44", "physics": false, "shape": "dot", "size": 5, "title": "ID: 44\nType: tutorial_pyr\nV: -51.76mV", "x": -189.73361266517378, "y": 232.38148855926931}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 49, "label": "49", "physics": false, "shape": "dot", "size": 5, "title": "ID: 49\nType: tutorial_pyr\nV: -57.77mV", "x": -224.5532244390033, "y": 198.9367974861529}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 53, "label": "53", "physics": false, "shape": "dot", "size": 5, "title": "ID: 53\nType: tutorial_pyr\nV: -55.63mV", "x": -253.55702565254072, "y": 160.33974785509926}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 55, "label": "55", "physics": false, "shape": "dot", "size": 5, "title": "ID: 55\nType: tutorial_pyr\nV: -50.56mV", "x": -275.9938330893894, "y": 117.58998297740449}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 56, "label": "56", "physics": false, "shape": "dot", "size": 5, "title": "ID: 56\nType: tutorial_pyr\nV: -66.56mV", "x": -291.28254522247715, "y": 71.7946993079262}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 58, "label": "58", "physics": false, "shape": "dot", "size": 5, "title": "ID: 58\nType: tutorial_pyr\nV: -54.37mV", "x": -299.0271924383683, "y": 24.139970638487835}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 59, "label": "59", "physics": false, "shape": "dot", "size": 5, "title": "ID: 59\nType: tutorial_pyr\nV: -53.89mV", "x": -299.02719244225744, "y": -24.139970590312483}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 60, "label": "60", "physics": false, "shape": "dot", "size": 5, "title": "ID: 60\nType: tutorial_pyr\nV: -55.59mV", "x": -291.28254523404377, "y": -71.79469926099868}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 63, "label": "63", "physics": false, "shape": "dot", "size": 5, "title": "ID: 63\nType: tutorial_pyr\nV: -51.01mV", "x": -275.993833108334, "y": -117.58998293293986}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 65, "label": "65", "physics": false, "shape": "dot", "size": 5, "title": "ID: 65\nType: tutorial_pyr\nV: -52.80mV", "x": -253.55702567837264, "y": -160.33974781424934}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 66, "label": "66", "physics": false, "shape": "dot", "size": 5, "title": "ID: 66\nType: tutorial_pyr\nV: -51.80mV", "x": -224.55322447105348, "y": -198.93679744997573}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 71, "label": "71", "physics": false, "shape": "dot", "size": 5, "title": "ID: 71\nType: tutorial_pyr\nV: -53.08mV", "x": -189.73361270261202, "y": -232.3814885287019}, {"borderWidth": 0, "color": {"background": "#ff4d4d", "border": "#ff4d4d"}, "font": {"color": "white"}, "id": 75, "label": "75", "physics": false, "shape": "dot", "size": 5, "title": "ID: 75\nType: tutorial_pyr\nV: -52.19mV", "x": -150.00000002790443, "y": -259.8076211192209}, {"borderWidth": 0, "color": {"background": "#4d4dff", "border": "#4d4dff"}, "font": {"color": "white"}, "id": 80, "label": "80", "physics": false, "shape": "dot", "size": 5, "title": "ID: 80\nType: tutorial_pv\nV: -51.86mV", "x": -106.38146614404708, "y": -280.5048727937591}, {"borderWidth": 0, "color": {"background": "#4d4dff", "border": "#4d4dff"}, "font": {"color": "white"}, "id": 81, "label": "81", "physics": false, "shape": "dot", "size": 5, "title": "ID: 81\nType: tutorial_pv\nV: -50.86mV", "x": -60.00770816681208, "y": -293.9371956057394}, {"borderWidth": 0, "color": {"background": "#4d4dff", "border": "#4d4dff"}, "font": {"color": "white"}, "id": 82, "label": "82", "physics": false, "shape": "dot", "size": 5, "title": "ID: 82\nType: tutorial_pv\nV: -50.15mV", "x": -12.079782068734648, "y": -299.75669945002375}, {"borderWidth": 0, "color": {"background": "#4d4dff", "border": "#4d4dff"}, "font": {"color": "white"}, "id": 83, "label": "83", "physics": false, "shape": "dot", "size": 5, "title": "ID: 83\nType: tutorial_pv\nV: -52.09mV", "x": 36.16100403968924, "y": -297.8126622338976}, {"borderWidth": 0, "color": {"background": "#4d4dff", "border": "#4d4dff"}, "font": {"color": "white"}, "id": 85, "label": "85", "physics": false, "shape": "dot", "size": 5, "title": "ID: 85\nType: tutorial_pv\nV: -51.87mV", "x": 83.46523913803462, "y": -288.15543350010023}, {"borderWidth": 0, "color": {"background": "#4d4dff", "border": "#4d4dff"}, "font": {"color": "white"}, "id": 86, "label": "86", "physics": false, "shape": "dot", "size": 5, "title": "ID: 86\nType: tutorial_pv\nV: -59.90mV", "x": 128.60776838508792, "y": -271.0351304001154}, {"borderWidth": 0, "color": {"background": "#4d4dff", "border": "#4d4dff"}, "font": {"color": "white"}, "id": 90, "label": "90", "physics": false, "shape": "dot", "size": 5, "title": "ID: 90\nType: tutorial_pv\nV: -61.07mV", "x": 170.41942398568963, "y": -246.89515979132875}, {"borderWidth": 0, "color": {"background": "#4d4dff", "border": "#4d4dff"}, "font": {"color": "white"}, "id": 92, "label": "92", "physics": false, "shape": "dot", "size": 5, "title": "ID: 92\nType: tutorial_pv\nV: -51.18mV", "x": 207.8173060224915, "y": -216.36073423233276}, {"borderWidth": 0, "color": {"background": "#4d4dff", "border": "#4d4dff"}, "font": {"color": "white"}, "id": 94, "label": "94", "physics": false, "shape": "dot", "size": 5, "title": "ID: 94\nType: tutorial_pv\nV: -56.74mV", "x": 239.8328289949932, "y": -180.2226793060694}, {"borderWidth": 0, "color": {"background": "#4d4dff", "border": "#4d4dff"}, "font": {"color": "white"}, "id": 96, "label": "96", "physics": false, "shape": "dot", "size": 5, "title": "ID: 96\nType: tutorial_pv\nV: -55.13mV", "x": 265.63680767522976, "y": -139.4169516526344}, {"borderWidth": 0, "color": {"background": "#4d4dff", "border": "#4d4dff"}, "font": {"color": "white"}, "id": 98, "label": "98", "physics": false, "shape": "dot", "size": 5, "title": "ID: 98\nType: tutorial_pv\nV: -50.66mV", "x": 284.56093256962333, "y": -95.00039818393532}, {"borderWidth": 0, "color": {"background": "#4d4dff", "border": "#4d4dff"}, "font": {"color": "white"}, "id": 99, "label": "99", "physics": false, "shape": "dot", "size": 5, "title": "ID: 99\nType: tutorial_pv\nV: -58.27mV", "x": 296.1150787838196, "y": -48.12338430381108}]);
+                  edges = new vis.DataSet([{"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 6, "label": "0.77", "title": "Weight: 0.7694", "to": 3, "width": 1}, {"arrows": "to", "color": "#FFFF00", "dashes": false, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 7, "label": "0.76", "title": "Weight: 0.7605", "to": 3, "width": 3}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 9, "label": "0.74", "title": "Weight: 0.7431", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 11, "label": "0.83", "title": "Weight: 0.8275", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 15, "label": "0.61", "title": "Weight: 0.6095", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 18, "label": "0.94", "title": "Weight: 0.9378", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 19, "label": "0.82", "title": "Weight: 0.8199", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 25, "label": "0.83", "title": "Weight: 0.8296", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 27, "label": "0.81", "title": "Weight: 0.8088", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 29, "label": "0.68", "title": "Weight: 0.6783", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 34, "label": "0.84", "title": "Weight: 0.8381", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 35, "label": "0.97", "title": "Weight: 0.9732", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 39, "label": "0.65", "title": "Weight: 0.6453", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 41, "label": "0.91", "title": "Weight: 0.9109", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 44, "label": "0.88", "title": "Weight: 0.8838", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 49, "label": "0.91", "title": "Weight: 0.9144", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 53, "label": "0.88", "title": "Weight: 0.8793", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 55, "label": "0.88", "title": "Weight: 0.8827", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 56, "label": "0.97", "title": "Weight: 0.9719", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 58, "label": "0.76", "title": "Weight: 0.7596", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 59, "label": "0.98", "title": "Weight: 0.9754", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 60, "label": "0.63", "title": "Weight: 0.6316", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 63, "label": "0.68", "title": "Weight: 0.6828", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 65, "label": "0.84", "title": "Weight: 0.8441", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 66, "label": "0.89", "title": "Weight: 0.8858", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 71, "label": "0.85", "title": "Weight: 0.8527", "to": 3, "width": 1}, {"arrows": "to", "color": "#ff4d4d", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 75, "label": "0.88", "title": "Weight: 0.8784", "to": 3, "width": 1}, {"arrows": "to", "color": "#4d4dff", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 80, "label": "0.91", "title": "Weight: 0.9142", "to": 3, "width": 1}, {"arrows": "to", "color": "#4d4dff", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 81, "label": "1.18", "title": "Weight: 1.1770", "to": 3, "width": 1}, {"arrows": "to", "color": "#4d4dff", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 82, "label": "1.18", "title": "Weight: 1.1796", "to": 3, "width": 1}, {"arrows": "to", "color": "#4d4dff", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 83, "label": "1.14", "title": "Weight: 1.1361", "to": 3, "width": 1}, {"arrows": "to", "color": "#4d4dff", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 85, "label": "0.94", "title": "Weight: 0.9415", "to": 3, "width": 1}, {"arrows": "to", "color": "#4d4dff", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 86, "label": "1.09", "title": "Weight: 1.0921", "to": 3, "width": 1}, {"arrows": "to", "color": "#4d4dff", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 90, "label": "0.98", "title": "Weight: 0.9774", "to": 3, "width": 1}, {"arrows": "to", "color": "#4d4dff", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 92, "label": "1.27", "title": "Weight: 1.2726", "to": 3, "width": 1}, {"arrows": "to", "color": "#4d4dff", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 94, "label": "1.25", "title": "Weight: 1.2539", "to": 3, "width": 1}, {"arrows": "to", "color": "#4d4dff", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 96, "label": "1.14", "title": "Weight: 1.1425", "to": 3, "width": 1}, {"arrows": "to", "color": "#4d4dff", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 98, "label": "1.10", "title": "Weight: 1.0988", "to": 3, "width": 1}, {"arrows": "to", "color": "#4d4dff", "dashes": true, "font": {"align": "middle", "background": "#1E1E1E", "color": "white", "size": 10, "strokeWidth": 0}, "from": 99, "label": "1.03", "title": "Weight: 1.0315", "to": 3, "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
