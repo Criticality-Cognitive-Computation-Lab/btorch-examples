@@ -15,6 +15,11 @@ def _should_close_figures(cfg):
     return not bool(getattr(cfg, "show_inline_figures", False))
 
 
+def _should_close_figures(cfg):
+    """Close figures by default, but keep them open for notebook-style inline display."""
+    return not bool(getattr(cfg, "show_inline_figures", False))
+
+
 def prepare_data_from_dict(result, model_param, cfg, connectome_data):
     """Prepare data from result dictionary for analysis."""
     time_points = np.arange(cfg.simulation.T)# * cfg.simulation.dt
