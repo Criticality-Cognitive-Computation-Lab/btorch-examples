@@ -4,11 +4,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from btorch.analysis.spiking import (
-    cv_from_spikes,
-    fano_factor_from_spikes,
-    kurtosis_from_spikes,
-)
+from btorch.analysis.spiking import fano, isi_cv, kurtosis
 
 
 def ensure_numpy(x):
@@ -85,8 +81,8 @@ def compute_dynamics_metrics(spikes, dt=1.0):
     # Firing Rate (Hz)
     rate = spikes.mean(axis=(0, 1)) * 1000.0 / dt
 
-    # CV
-    cv, _, _ = cv_from_spikes(spikes, dt_ms=dt)
+    # CV (per-neuron; keep behavior aligned with previous mean-over-batch logic)
+    cv, _ = isi_cv(spikes, dt_ms=dt)
     # Manual nan-safe mean to avoid warnings on all-NaN slices
     cv = np.where(np.isfinite(cv), cv, np.nan)
     finite_mask = np.isfinite(cv)
@@ -97,11 +93,11 @@ def compute_dynamics_metrics(spikes, dt=1.0):
     # Fano & Kurtosis
     window = max(10, min(100 if T > 200 else T // 2, T - 1))
 
-    fano = fano_factor_from_spikes(spikes, window=window)
-    fano = np.nanmean(fano, axis=0)
+    fano_values, _ = fano(spikes, window=window)
+    fano = np.nanmean(fano_values, axis=0)
 
-    kurt = kurtosis_from_spikes(spikes, window=window, dt_ms=dt)
-    kurt = np.nanmean(kurt, axis=0)
+    kurt_values, _ = kurtosis(spikes, window=window)
+    kurt = np.nanmean(kurt_values, axis=0)
     return pd.DataFrame(
         {
             "rate_hz": rate,

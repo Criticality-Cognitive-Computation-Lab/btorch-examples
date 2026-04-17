@@ -1,0 +1,2 @@
+- device=cpu
+- out_dir=/home/liuxingyu/btorch-examples/mice_v1/tutorial_smoke_output

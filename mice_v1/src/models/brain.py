@@ -8,7 +8,7 @@ from btorch.utils.dict_utils import unflatten_dict
 from btorch.models.neurons.glif import GLIF3
 from btorch.models.rnn import RecurrentNN
 from btorch.models.shape import expand_leading_dims
-from btorch.models.synapse import AlphaPSC, HeterSynapsePSC, HeterSynapseDualPSC #, GLIFAlphaPSCFull
+from btorch.models.synapse import AlphaPSC, HeterSynapsePSC#, HeterSynapseDualPSC #, GLIFAlphaPSCFull
 
 import ipdb
 

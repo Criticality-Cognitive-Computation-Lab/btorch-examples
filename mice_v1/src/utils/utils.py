@@ -16,7 +16,7 @@ from btorch import connectome
 from btorch.connectome import augment
 from btorch.models import environ, functional, init, linear
 from src.models import brain
-from btorch.models.synapse import AlphaPSC, HeterSynapsePSC, HeterSynapseDualPSC #, HeterogeneousAlphaPSC (最后这个是msy的版本，暂时不用), GLIFAlphaPSCFull, 
+from btorch.models.synapse import AlphaPSC, HeterSynapsePSC#, HeterSynapseDualPSC #, HeterogeneousAlphaPSC (最后这个是msy的版本，暂时不用), GLIFAlphaPSCFull, 
 #from btorch.models.linear import GLIFSparseConn
 from btorch.connectome.connection import make_hetersynapse_conn
 #from btorch.models.benchmark import PerfTimer

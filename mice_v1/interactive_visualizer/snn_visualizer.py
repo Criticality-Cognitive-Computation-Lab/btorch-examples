@@ -4,6 +4,7 @@ import numpy as np
 import networkx as nx
 import os
 import glob
+import json
 import math  # 必须导入 math 库用于计算半径
 import matplotlib.pyplot as plt
 from pyvis.network import Network
@@ -63,6 +64,77 @@ def load_network_static(network_dir):
         )
         
     return G, N, None
+
+
+def _candidate_glif_dirs(network_dir):
+    network_dir = os.path.abspath(network_dir)
+    candidates = [
+        os.path.join(os.path.dirname(network_dir), "glif_models"),
+        os.path.join(os.path.dirname(os.path.dirname(network_dir)), "glif_models"),
+        os.path.join(network_dir, "glif_models"),
+    ]
+    seen = []
+    for path in candidates:
+        if path not in seen:
+            seen.append(path)
+    return seen
+
+
+def _convert_glif_json_to_physical_voltage_params(raw):
+    coeffs = raw.get("coeffs", {})
+    coeff_th = float(coeffs.get("th_inf", 1.0))
+    el_reference_mv = float(raw.get("El_reference", -0.07)) * 1000.0
+    el_internal_mv = float(raw.get("El", 0.0)) * 1000.0
+    th_inf_mv = float(raw.get("th_inf", raw.get("init_threshold", 0.02))) * coeff_th * 1000.0
+    voltage_scale = th_inf_mv if th_inf_mv != 0 else 1.0
+
+    return {
+        "El_reference": el_reference_mv,
+        "voltage_scale": voltage_scale,
+        "v_rest_scaled": el_internal_mv / voltage_scale,
+        "v_threshold_scaled": th_inf_mv / voltage_scale,
+        "v_rest_physical": el_internal_mv + el_reference_mv,
+        "v_threshold_physical": th_inf_mv + el_reference_mv,
+    }
+
+
+@st.cache_data
+def load_neuron_voltage_params(network_dir):
+    neurons_path = os.path.join(network_dir, "neurons.csv.gz")
+    if not os.path.exists(neurons_path):
+        return {}, f"Neuron file not found in {network_dir}"
+
+    glif_dir = None
+    for candidate in _candidate_glif_dirs(network_dir):
+        if os.path.isdir(candidate):
+            glif_dir = candidate
+            break
+
+    if glif_dir is None:
+        return {}, f"Could not locate a glif_models directory near {network_dir}"
+
+    df_neurons = pd.read_csv(neurons_path, compression="gzip")
+    if "simple_id" not in df_neurons.columns or "cell_class" not in df_neurons.columns:
+        return {}, "neurons.csv.gz must contain 'simple_id' and 'cell_class' columns"
+
+    class_params = {}
+    for cell_class in df_neurons["cell_class"].dropna().astype(str).unique():
+        class_dir = os.path.join(glif_dir, cell_class)
+        json_files = sorted(glob.glob(os.path.join(class_dir, "*.json")))
+        if not json_files:
+            return {}, f"No GLIF json file found for cell_class '{cell_class}' under {glif_dir}"
+        with open(json_files[0], "r", encoding="utf-8") as f:
+            class_params[cell_class] = _convert_glif_json_to_physical_voltage_params(json.load(f))
+
+    neuron_params = {}
+    for _, row in df_neurons.iterrows():
+        simple_id = int(row["simple_id"])
+        cell_class = str(row["cell_class"])
+        params = dict(class_params[cell_class])
+        params["cell_class"] = cell_class
+        neuron_params[simple_id] = params
+
+    return neuron_params, None
 
 @st.cache_data
 def load_simulation_variable(sim_dir, var_name, num_neurons, expected_shape=None):
@@ -143,20 +215,12 @@ class SNNVisualizer:
     def __init__(self, network_path=None, simulation_path=None):
         self.default_net_path = network_path or "/path/to/network"
         self.default_sim_path = simulation_path or "/path/to/simulation"
-        
-        self.v_th = -50.0
-        self.v_rest = -70.0
 
     def run(self):
         # --- Sidebar ---
         st.sidebar.title("🛠️ SNN Config")
         net_path = st.sidebar.text_input("Network Output Path", self.default_net_path)
         sim_path = st.sidebar.text_input("Simulation Output Path", self.default_sim_path)
-        
-        st.sidebar.markdown("---")
-        st.sidebar.markdown("**Neuron Params**")
-        self.v_rest = st.sidebar.number_input("Rest Potential (mV)", value=-70.0)
-        self.v_th = st.sidebar.number_input("Threshold (mV)", value=-50.0)
 
         if not os.path.exists(net_path) or not os.path.exists(sim_path):
             st.warning("Please provide valid paths.")
@@ -167,6 +231,11 @@ class SNNVisualizer:
             G, N, err = load_network_static(net_path) # 需确保外部定义了此函数
             if err:
                 st.error(err)
+                return
+
+            neuron_voltage_params, voltage_param_err = load_neuron_voltage_params(net_path)
+            if voltage_param_err:
+                st.error(voltage_param_err)
                 return
             
             v_mem = load_simulation_variable(sim_path, "v", N) # 需确保外部定义了此函数
@@ -190,7 +259,8 @@ class SNNVisualizer:
 
         data_bundle = {
             "v_mem": v_mem, "spikes": spikes, "psc": psc,
-            "epsc": epsc, "ipsc": ipsc, "i_ext": i_ext, "i_after": i_after
+            "epsc": epsc, "ipsc": ipsc, "i_ext": i_ext, "i_after": i_after,
+            "neuron_voltage_params": neuron_voltage_params,
         }
         
         self._render_ui(G, data_bundle, T_steps)
@@ -237,11 +307,20 @@ class SNNVisualizer:
     def _render_hud(self, node_info, data, node_id, t_step, n_pre, n_post):
         current_v = data["v_mem"][node_id, t_step]
         is_spiking = data["spikes"][node_id, t_step]
+        neuron_params = data.get("neuron_voltage_params", {}).get(node_id, {})
+        v_rest = neuron_params.get("v_rest_physical")
+        v_th = neuron_params.get("v_threshold_physical")
+        cell_class = neuron_params.get("cell_class", node_info.get("type", "?"))
+
         st.markdown(f"### 📊 Neuron State (t={t_step})")
         c1, c2, c3, c4, c5 = st.columns(5)
-        with c1: st.metric("Type", f"{node_info.get('type', '?')}")
+        with c1: st.metric("Type", f"{cell_class}")
         with c2: st.metric("Membrane", "⚡ SPIKE!" if is_spiking else f"{current_v:.2f} mV", delta="Spiking" if is_spiking else None, delta_color="inverse")
-        with c3: st.metric("Rest/Th", f"{self.v_rest}/{self.v_th}")
+        with c3:
+            if v_rest is None or v_th is None:
+                st.metric("Rest/Th", "N/A")
+            else:
+                st.metric("Rest/Th", f"{v_rest:.2f}/{v_th:.2f}")
         with c4: st.metric("Total Inputs", n_pre)
         with c5: st.metric("Total Outputs", n_post)
         st.markdown("---")
@@ -351,6 +430,8 @@ class SNNVisualizer:
         ts_psc = data["psc"][center, :]
         ts_epsc = data["epsc"][center, :]
         ts_ipsc = data["ipsc"][center, :]
+        neuron_params = data.get("neuron_voltage_params", {}).get(center, {})
+        v_th = neuron_params.get("v_threshold_physical")
         
         max_raster = 50
         if len(inputs) > max_raster:
@@ -388,7 +469,8 @@ class SNNVisualizer:
         # Plot 1: V_mem
         ax1 = axes[1]
         ax1.plot(ts_v, color='cyan', lw=1.5)
-        ax1.axhline(self.v_th, color='white', ls='--')
+        if v_th is not None:
+            ax1.axhline(v_th, color='white', ls='--')
         ax1.set_ylabel("mV")
         
         # Plot 2: Currents

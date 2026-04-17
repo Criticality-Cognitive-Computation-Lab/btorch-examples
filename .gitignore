@@ -43,3 +43,6 @@ nsight_report*
 .kilocode
 .kilo
 .agent
+
+*.parquet
+

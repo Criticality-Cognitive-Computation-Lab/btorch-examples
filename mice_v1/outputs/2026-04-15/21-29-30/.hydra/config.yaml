@@ -1,0 +1,104 @@
+seed: 42
+device: cpu
+dtype: float32
+out_dir: /home/liuxingyu/btorch-examples/mice_v1/tutorial_smoke_output
+visualize: true
+figures_to_plot:
+- voltage
+- post_synapse_current
+- spike
+- fr_spectrum
+max_neurons_raster: null
+simulation:
+  name: sim
+  T: 300
+  dt: 1.0
+  n_neuron: null
+  batch_size: 8
+  psc_time_range_ms:
+  - 0
+  - null
+dataset:
+  type: noisydc_ou
+  current_mode: rheobase_scaled
+  scale_factor: 1.05
+  std: 0.25
+  tau_ou: 20.0
+  scale_noise_with_mean: true
+input:
+  type: all
+network:
+  name: tutorial_network
+  conn_path: null
+  glif_dir: null
+  synapse_impl: hetersyn
+  n_neuron: null
+  weight:
+    type: from_conn
+    weight_ee_scale: 1.0
+    weight_ei_scale: 1.0
+    weight_ie_scale: 1.0
+    weight_ii_scale: 1.0
+  synapse:
+    type: alpha
+    tau_syn_ee: 2.25
+    tau_syn_ie: 5.5
+    tau_syn_ei: 2.8
+    tau_syn_ii: 5.8
+  input_layer:
+    type: identical
+    value: 1.0
+tutorial:
+  network:
+    n_exc: 80
+    n_inh: 20
+    spatial_span_um: 200.0
+    connection_probabilities:
+      EE: 0.35
+      EI: 0.45
+      IE: 0.7
+      II: 0.4
+    weight_ranges:
+      EE:
+      - 0.6
+      - 1.0
+      EI:
+      - 0.8
+      - 1.2
+      IE:
+      - 0.9
+      - 1.3
+      II:
+      - 0.7
+      - 1.1
+  glif_templates:
+    tutorial_pyr:
+      C: 1.5e-10
+      R_input: 100000000.0
+      spike_cut_length: 2
+      dt: 5.0e-05
+      dt_multiplier: 1.0
+      El_reference: -0.07
+      El: 0.0
+      th_inf: 0.02
+      asc_tau_array:
+      - 0.01
+      - 0.05
+      asc_amp_array:
+      - 0.0
+      - 0.0
+    tutorial_pv:
+      C: 1.0e-10
+      R_input: 120000000.0
+      spike_cut_length: 2
+      dt: 5.0e-05
+      dt_multiplier: 1.0
+      El_reference: -0.068
+      El: 0.0
+      th_inf: 0.018
+      asc_tau_array:
+      - 0.008
+      - 0.03
+      asc_amp_array:
+      - 0.0
+      - 0.0

@@ -12,6 +12,11 @@ from src.utils.other import simple_id_to_root_id_func
 import ipdb
 
 
+def _should_close_figures(cfg):
+    """Close figures by default, but keep them open for notebook-style inline display."""
+    return not bool(getattr(cfg, "show_inline_figures", False))
+
+
 def prepare_data_from_dict(result, model_param, cfg, connectome_data):
     """Prepare data from result dictionary for analysis."""
     time_points = np.arange(cfg.simulation.T)# * cfg.simulation.dt
@@ -140,7 +145,8 @@ def plot_voltage(result, model_param, cfg, selected_neurons, root_ids, cell_clas
         El_reference=El_reference if El_reference is not None else None,
     )
     fig.savefig(f"{epoch_figure_dir}/{figname}.pdf", bbox_inches="tight")
-    plt.close(fig)
+    if _should_close_figures(cfg):
+        plt.close(fig)
 
     fig, _ = plot_population_by_field_single_plot(
         result["neuron"],
@@ -154,7 +160,8 @@ def plot_voltage(result, model_param, cfg, selected_neurons, root_ids, cell_clas
         El_reference=El_reference if El_reference is not None else None,
     )
     fig[0].savefig(f"{epoch_figure_dir}/{figname}_single.pdf", bbox_inches="tight")
-    plt.close(fig[0])
+    if _should_close_figures(cfg):
+        plt.close(fig[0])
     return fig
 
 def plot_post_synapse_current(result, model_param, cfg, selected_neurons, root_ids, cell_classes=None, connectome_data=None, time_points=None, epoch_figure_dir=None, time_range_ms=None):
@@ -236,7 +243,8 @@ def plot_post_synapse_current(result, model_param, cfg, selected_neurons, root_i
     fig_total.savefig(
         f"{epoch_figure_dir}/post_synapse_current_responses.pdf", bbox_inches="tight"
     )
-    plt.close(fig_total)
+    if _should_close_figures(cfg):
+        plt.close(fig_total)
 
     # E 分量
     if "psc_e" in result.get("synapse", {}):
@@ -253,7 +261,8 @@ def plot_post_synapse_current(result, model_param, cfg, selected_neurons, root_i
         fig_e.savefig(
             f"{epoch_figure_dir}/post_synapse_E_current_responses.pdf", bbox_inches="tight"
         )
-        plt.close(fig_e)
+        if _should_close_figures(cfg):
+            plt.close(fig_e)
     else:
         fig_e = None
 
@@ -272,7 +281,8 @@ def plot_post_synapse_current(result, model_param, cfg, selected_neurons, root_i
         fig_i.savefig(
             f"{epoch_figure_dir}/post_synapse_I_current_responses.pdf", bbox_inches="tight"
         )
-        plt.close(fig_i)
+        if _should_close_figures(cfg):
+            plt.close(fig_i)
     else:
         fig_i = None
 
@@ -291,7 +301,8 @@ def plot_post_synapse_current(result, model_param, cfg, selected_neurons, root_i
         fig_i_signed.savefig(
             f"{epoch_figure_dir}/post_synapse_I_current_responses_signed.pdf", bbox_inches="tight"
         )
-        plt.close(fig_i_signed)
+        if _should_close_figures(cfg):
+            plt.close(fig_i_signed)
 
     # 合并图：每个子图三条曲线（总/E/I(abs)）
     # try:
@@ -324,7 +335,8 @@ def plot_post_synapse_current(result, model_param, cfg, selected_neurons, root_i
         fig_combo.savefig(
             f"{epoch_figure_dir}/post_synapse_current_combined.pdf", bbox_inches="tight"
         )
-        plt.close(fig_combo)
+        if _should_close_figures(cfg):
+            plt.close(fig_combo)
     
     # 合并图（带符号I）：总/E/I(signed)
     if "psc" in syn and "psc_e" in syn and "psc_i" in syn:
@@ -350,7 +362,8 @@ def plot_post_synapse_current(result, model_param, cfg, selected_neurons, root_i
         fig_combo_signed.savefig(
             f"{epoch_figure_dir}/post_synapse_current_combined_signed.pdf", bbox_inches="tight"
         )
-        plt.close(fig_combo_signed)
+        if _should_close_figures(cfg):
+            plt.close(fig_combo_signed)
     # except Exception as e:
     #     print(f"⚠️ 绘制合并PSC图失败: {e}")
 
@@ -453,8 +466,9 @@ def plot_post_synapse_current(result, model_param, cfg, selected_neurons, root_i
     fig_sig.tight_layout()
     fig_abs.savefig(f"{epoch_figure_dir}/population_psc_abs_{agg_mode}.pdf", bbox_inches='tight')
     fig_sig.savefig(f"{epoch_figure_dir}/population_psc_signed_{agg_mode}.pdf", bbox_inches='tight')
-    plt.close(fig_abs)
-    plt.close(fig_sig)
+    if _should_close_figures(cfg):
+        plt.close(fig_abs)
+        plt.close(fig_sig)
 
     # except Exception as e:
     #     print(f"⚠️ 绘制群体PSC图失败: {e}")
@@ -495,7 +509,8 @@ def plot_fr_spectrum(result, model_param, cfg, epoch_figure_dir):
     ax.legend(loc="best")
 
     fig.savefig(f"{epoch_figure_dir}/mean_rate_spectrum.pdf", bbox_inches="tight")
-    plt.close(fig)
+    if _should_close_figures(cfg):
+        plt.close(fig)
     return fig
 
 # def plot_spike(result, model_param, cfg, sampled_neurons, connectome_data=None, time_points=None, epoch_figure_dir=None):

@@ -1,9 +1,12 @@
+import json
 import logging
-import time
 import threading
+import time
 from pathlib import Path
 
 import hydra
+import numpy as np
+import pandas as pd
 import torch
 from omegaconf import DictConfig, OmegaConf
 
@@ -23,7 +26,6 @@ from src.runner import ExperimentRunner
 from src.utils.dataloader import create_dataloaders
 from src.utils.device import detect_device
 from src.utils.other import set_seed, setup_logging
-from tutorial.mock_assets import build_tutorial_assets
 
 
 class GPUMemoryMonitor:
@@ -202,25 +204,7 @@ class GPUMemoryMonitor:
             plt.title("GPU Memory Usage Over Time")
             plt.grid(alpha=0.25)
             plt.legend(loc="upper right")
-
-            if step_labels:
-                mapping_lines = [f"{step['label']}: {step['name']} ({step['time_s']:.2f}s)" for step in step_labels]
-                max_lines_per_col = 12
-                n_cols = max(1, (len(mapping_lines) + max_lines_per_col - 1) // max_lines_per_col)
-                blocks = []
-                for col in range(n_cols):
-                    start = col * max_lines_per_col
-                    end = min((col + 1) * max_lines_per_col, len(mapping_lines))
-                    blocks.append("\n".join(mapping_lines[start:end]))
-
-                for col, block in enumerate(blocks):
-                    x_pos = 0.01 + col * (0.98 / n_cols)
-                    plt.gcf().text(x_pos, 0.01, block, ha="left", va="bottom", fontsize=8, family="monospace")
-
-                bottom = 0.18 + 0.08 * (n_cols - 1)
-                plt.tight_layout(rect=[0, bottom, 1, 1])
-            else:
-                plt.tight_layout()
+            plt.tight_layout()
 
             plot_path = self.output_dir / "gpu_memory_usage_curve.png"
             plt.savefig(plot_path, dpi=180)
@@ -247,6 +231,149 @@ class GPUMemoryMonitor:
         }
 
 
+def _ensure_dir(path: Path) -> Path:
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _build_neurons_table(tutorial_cfg, rng: np.random.Generator) -> pd.DataFrame:
+    n_exc = int(tutorial_cfg.network.n_exc)
+    n_inh = int(tutorial_cfg.network.n_inh)
+    n_total = n_exc + n_inh
+
+    span = float(tutorial_cfg.network.spatial_span_um)
+    coords = rng.uniform(0.0, span, size=(n_total, 3)).astype(np.float32)
+
+    rows = []
+    for simple_id in range(n_total):
+        is_exc = simple_id < n_exc
+        rows.append(
+            {
+                "root_id": 1000 + simple_id,
+                "simple_id": simple_id,
+                "type": "Excitatory" if is_exc else "Inhibitory",
+                "layer": "L4",
+                "cell_class": "tutorial_pyr" if is_exc else "tutorial_pv",
+                "EI": "E" if is_exc else "I",
+                "x_position": coords[simple_id, 0],
+                "y_position": coords[simple_id, 1],
+                "z_position": coords[simple_id, 2],
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _pair_key(pre_ei: str, post_ei: str) -> str:
+    return f"{pre_ei}{post_ei}"
+
+
+def _sample_weight(tutorial_cfg, rng: np.random.Generator, pair_type: str) -> float:
+    low = float(tutorial_cfg.network.weight_ranges[pair_type][0])
+    high = float(tutorial_cfg.network.weight_ranges[pair_type][1])
+    return float(rng.uniform(low, high))
+
+
+def _build_connections_table(tutorial_cfg, neurons: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
+    rows = []
+    simple_ids = neurons["simple_id"].to_numpy(dtype=int)
+    root_ids = neurons["root_id"].to_numpy(dtype=int)
+    cell_classes = neurons["cell_class"].to_numpy(dtype=object)
+    ei_types = neurons["EI"].to_numpy(dtype=object)
+
+    for pre in simple_ids:
+        for post in simple_ids:
+            if pre == post:
+                continue
+
+            pair_type = _pair_key(str(ei_types[pre]), str(ei_types[post]))
+            prob = float(tutorial_cfg.network.connection_probabilities[pair_type])
+            if rng.random() > prob:
+                continue
+
+            rows.append(
+                {
+                    "pre_id": int(root_ids[pre]),
+                    "post_id": int(root_ids[post]),
+                    "pre_simple_id": int(pre),
+                    "post_simple_id": int(post),
+                    "pre_type": str(cell_classes[pre]),
+                    "post_type": str(cell_classes[post]),
+                    "EI": str(ei_types[pre]),
+                    "syn_count": 1,
+                    "weight": _sample_weight(tutorial_cfg, rng, pair_type),
+                }
+            )
+
+    if not rows:
+        rows.append(
+            {
+                "pre_id": int(root_ids[0]),
+                "post_id": int(root_ids[1]),
+                "pre_simple_id": 0,
+                "post_simple_id": 1,
+                "pre_type": str(cell_classes[0]),
+                "post_type": str(cell_classes[1]),
+                "EI": str(ei_types[0]),
+                "syn_count": 1,
+                "weight": _sample_weight(tutorial_cfg, rng, "EE"),
+            }
+        )
+
+    inh_indices = simple_ids[ei_types == "I"]
+    exc_indices = simple_ids[ei_types == "E"]
+    if inh_indices.size and exc_indices.size:
+        existing_ie = any(
+            row["EI"] == "I" and neurons.iloc[int(row["post_simple_id"])]["EI"] == "E"
+            for row in rows
+        )
+        if not existing_ie:
+            pre = int(inh_indices[0])
+            post = int(exc_indices[0])
+            rows.append(
+                {
+                    "pre_id": int(root_ids[pre]),
+                    "post_id": int(root_ids[post]),
+                    "pre_simple_id": pre,
+                    "post_simple_id": post,
+                    "pre_type": str(cell_classes[pre]),
+                    "post_type": str(cell_classes[post]),
+                    "EI": str(ei_types[pre]),
+                    "syn_count": 1,
+                    "weight": _sample_weight(tutorial_cfg, rng, "IE"),
+                }
+            )
+
+    connections = pd.DataFrame(rows)
+    connections = connections.drop_duplicates(subset=["pre_simple_id", "post_simple_id"], keep="first")
+    connections = connections.sort_values(["pre_simple_id", "post_simple_id"]).reset_index(drop=True)
+    return connections
+
+
+def _write_glif_templates(tutorial_cfg, glif_dir: Path) -> None:
+    glif_templates = OmegaConf.to_container(tutorial_cfg.glif_templates, resolve=True)
+    for class_name, params in glif_templates.items():
+        class_dir = _ensure_dir(glif_dir / class_name)
+        payload = {
+            "coeffs": {
+                "C": 1.0,
+                "th_inf": 1.0,
+                "asc_amp_array": [1.0 for _ in params["asc_amp_array"]],
+            },
+            "C": params["C"],
+            "R_input": params["R_input"],
+            "spike_cut_length": params["spike_cut_length"],
+            "dt": params["dt"],
+            "dt_multiplier": params["dt_multiplier"],
+            "El_reference": params["El_reference"],
+            "El": params["El"],
+            "th_inf": params["th_inf"],
+            "asc_tau_array": params["asc_tau_array"],
+            "asc_amp_array": params["asc_amp_array"],
+        }
+        with open(class_dir / "template.json", "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2)
+
+
 @hydra.main(version_base=None, config_path=".", config_name="tutorial_generate_and_sim")
 def main(cfg: DictConfig):
     output_dir = Path(cfg.out_dir)
@@ -264,45 +391,142 @@ def main(cfg: DictConfig):
     gpu_monitor.start()
 
     try:
-        gpu_monitor.mark_step("before_mock_asset_build")
-        logger.info("============== Phase 1: Tutorial Mock Asset Build ==============")
-        tutorial_assets = build_tutorial_assets(cfg, output_dir)
-        gpu_monitor.mark_step("after_mock_asset_build")
+        rng = np.random.default_rng(int(cfg.seed))
+        tutorial_cfg = cfg.tutorial
 
+        asset_root = _ensure_dir(output_dir / "tutorial_assets")
+        connectome_dir = _ensure_dir(asset_root / "connectome")
+        glif_dir = _ensure_dir(asset_root / "glif_models")
+
+        # ============================================================================
+        # Tutorial Step 1: Configure a tiny E/I network that is easy to inspect.
+        # In the notebook, this is a good place to print the seed, neuron counts,
+        # connection probabilities, and weight ranges before anything is generated.
+        # ============================================================================
+        gpu_monitor.mark_step("tutorial_step_1_configure_network")
+        logger.info("============== Tutorial Step 1: Configure The Mock Network ==============")
+        logger.info(
+            "Network summary | n_exc=%d n_inh=%d spatial_span_um=%.1f",
+            int(tutorial_cfg.network.n_exc),
+            int(tutorial_cfg.network.n_inh),
+            float(tutorial_cfg.network.spatial_span_um),
+        )
+        logger.info("Connection probabilities: %s", dict(tutorial_cfg.network.connection_probabilities))
+        logger.info("Weight ranges: %s", dict(tutorial_cfg.network.weight_ranges))
+
+        # ============================================================================
+        # Tutorial Step 2: Generate the neuron table.
+        # Each row is one neuron in the future recurrent network. This table is the
+        # first object students will usually want to print and inspect.
+        # ============================================================================
+        gpu_monitor.mark_step("tutorial_step_2_generate_neurons")
+        logger.info("============== Tutorial Step 2: Generate The Neuron Table ==============")
+        neurons = _build_neurons_table(tutorial_cfg, rng)
+        neurons.to_csv(connectome_dir / "neurons.csv.gz", index=False, compression="gzip")
+        logger.info("Neuron table head:\n%s", neurons.head().to_string(index=False))
+        logger.info("Neuron counts by EI type:\n%s", neurons["EI"].value_counts().to_string())
+
+        # ============================================================================
+        # Tutorial Step 3: Generate the connection table.
+        # This is the explicit random network-building stage. In the notebook, this
+        # is where edge histograms, adjacency previews, or degree plots can be added.
+        # ============================================================================
+        gpu_monitor.mark_step("tutorial_step_3_generate_connections")
+        logger.info("============== Tutorial Step 3: Generate The Connection Table ==============")
+        connections = _build_connections_table(tutorial_cfg, neurons, rng)
+        connections.to_csv(connectome_dir / "connections.csv.gz", index=False, compression="gzip")
+
+        pair_labels = (
+            connections["EI"]
+            + connections["post_simple_id"].map(neurons.set_index("simple_id")["EI"]).astype(str)
+        )
+        logger.info("Connection table head:\n%s", connections.head().to_string(index=False))
+        logger.info("Connection counts by pair type:\n%s", pair_labels.value_counts().sort_index().to_string())
+        logger.info("Total generated connections: %d", len(connections))
+
+        # ============================================================================
+        # Tutorial Step 4: Write two mock GLIF parameter templates.
+        # We keep only one excitatory template and one inhibitory template so the
+        # neuron-parameter loading path stays realistic without overwhelming detail.
+        # ============================================================================
+        gpu_monitor.mark_step("tutorial_step_4_write_glif_templates")
+        logger.info("============== Tutorial Step 4: Write Mock GLIF Templates ==============")
+        _write_glif_templates(tutorial_cfg, glif_dir)
+        logger.info("GLIF template classes: %s", list(OmegaConf.to_container(tutorial_cfg.glif_templates, resolve=True).keys()))
+
+        metadata = {
+            "n_neurons": int(len(neurons)),
+            "n_connections": int(len(connections)),
+            "conn_path": str(connectome_dir),
+            "glif_dir": str(glif_dir),
+        }
+        with open(asset_root / "metadata.json", "w", encoding="utf-8") as handle:
+            json.dump(metadata, handle, indent=2)
+
+        # ============================================================================
+        # Tutorial Step 5: Bridge the generated assets into the runtime config.
+        # This is the point where the tutorial data becomes a normal simulation
+        # input for BaseRSNN.
+        # ============================================================================
+        gpu_monitor.mark_step("tutorial_step_5_bridge_config")
+        logger.info("============== Tutorial Step 5: Bridge Assets Into The Simulation Config ==============")
         OmegaConf.set_struct(cfg, False)
-        cfg.network.conn_path = tutorial_assets["conn_path"]
-        cfg.network.glif_dir = tutorial_assets["glif_dir"]
-        cfg.network.n_neuron = tutorial_assets["n_neurons"]
-        cfg.simulation.n_neuron = tutorial_assets["n_neurons"]
+        cfg.network.conn_path = metadata["conn_path"]
+        cfg.network.glif_dir = metadata["glif_dir"]
+        cfg.network.n_neuron = metadata["n_neurons"]
+        cfg.simulation.n_neuron = metadata["n_neurons"]
         OmegaConf.set_struct(cfg, True)
-
-        logger.info("Tutorial connectome path set to: %s", cfg.network.conn_path)
-        logger.info("Tutorial glif path set to: %s", cfg.network.glif_dir)
+        logger.info("Tutorial connectome path: %s", cfg.network.conn_path)
+        logger.info("Tutorial glif path: %s", cfg.network.glif_dir)
         logger.info("Tutorial neuron count: %s", cfg.network.n_neuron)
 
-        logger.info("============== Phase 2: Simulation ==============")
-        gpu_monitor.mark_step("before_environ_set")
+        # ============================================================================
+        # Tutorial Step 6: Initialize the btorch simulation environment and build
+        # the recurrent model.
+        # In the notebook, this is where students can inspect the built model and
+        # the loaded neuron/synapse parameter tensors.
+        # ============================================================================
+        gpu_monitor.mark_step("tutorial_step_6_build_model")
+        logger.info("============== Tutorial Step 6: Build The Spiking Model ==============")
         environ.set(dt=cfg.simulation.dt)
-        gpu_monitor.mark_step("after_environ_set")
-
-        logger.info("🏗️  Building Model...")
-        gpu_monitor.mark_step("before_build_model")
         model = BaseRSNN(cfg)
         model.to(cfg.device)
-        gpu_monitor.mark_step("after_build_model")
+        logger.info("Model built on device: %s", cfg.device)
+        logger.info("Loaded neuron parameter keys: %s", sorted(model.neuron_params.keys()))
 
+        # ============================================================================
+        # Tutorial Step 7: Generate the external input batch.
+        # The dataloader factory still handles the actual dataset creation, but we
+        # explicitly preview one batch here so the tutorial can print or visualize
+        # the injected input before the simulation starts.
+        # ============================================================================
+        gpu_monitor.mark_step("tutorial_step_7_generate_input")
+        logger.info("============== Tutorial Step 7: Generate The Input Batch ==============")
         i_thr = model.neuron_params.get("I_thr", None)
-
-        logger.info("📦 Preparing Data...")
-        gpu_monitor.mark_step("before_prepare_data")
         dataloaders = create_dataloaders(cfg, i_thr)
-        gpu_monitor.mark_step("after_prepare_data")
+        _, test_loader = dataloaders
+        example_batch = next(iter(test_loader))
+        if isinstance(example_batch, (list, tuple)):
+            example_batch = example_batch[0]
+        logger.info(
+            "Example input batch | shape=%s mean=%.4f std=%.4f min=%.4f max=%.4f",
+            tuple(example_batch.shape),
+            float(example_batch.mean().item()),
+            float(example_batch.std().item()),
+            float(example_batch.min().item()),
+            float(example_batch.max().item()),
+        )
 
-        logger.info("🏃 Starting Experiment Runner...")
+        # ============================================================================
+        # Tutorial Step 8: Run the actual recurrent simulation through the shared
+        # ExperimentRunner.
+        # This keeps the tutorial consistent with the main project while making the
+        # earlier data-building steps much easier to explain cell by cell.
+        # ============================================================================
+        gpu_monitor.mark_step("tutorial_step_8_run_simulation")
+        logger.info("============== Tutorial Step 8: Run The Simulation ==============")
         runner = ExperimentRunner(cfg, model, dataloaders)
-        gpu_monitor.mark_step("before_runner_run")
         runner.run()
-        gpu_monitor.mark_step("after_runner_run")
     finally:
         gpu_monitor.stop()
         gpu_monitor.summarize_and_save()
