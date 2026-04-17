@@ -1,0 +1,41 @@
+name: btorch-binder
+channels:
+  - conda-forge
+  - pyg
+dependencies:
+  - python=3.12
+  - pytorch-cpu>=2.8
+  - torchvision
+  - spikingjelly
+  - pytorch_sparse
+  - pip
+  - pip:
+      # Forked omegaconf for enhanced features (required for omegaconf-config skill)
+      - git+https://github.com/alexfanqi/omegaconf.git
+      # profiling
+      - tensorboard_plugin_profile
+      # dynamic tools
+      - nolds
+      - powerlaw
+      - git+https://github.com/Criticality-Cognitive-Computation-Lab/btorch.git
+  - tqdm
+  - matplotlib
+  - scipy
+  - xarray
+  - h5py
+  - hdf5plugin
+  - pandas >= 2 # assume CoW
+  - numba
+  - seaborn
+  - hydra-core
+  # dev
+  - ipykernel
+  # tensorboard
+  - tensorboard
+  - etils
+  # lint and type checking
+  - jaxtyping
+  - beartype
+  - mypy
+  # omegaconf
+  - openjdk
