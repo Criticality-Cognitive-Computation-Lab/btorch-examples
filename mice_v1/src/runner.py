@@ -16,8 +16,6 @@ from src.utils.vis_utils import (
 
 import metric as col_metrics
 
-import ipdb
-
 logger = logging.getLogger(__name__)
 
 class ExperimentRunner:

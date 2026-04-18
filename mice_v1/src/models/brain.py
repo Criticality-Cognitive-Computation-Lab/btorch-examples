@@ -12,8 +12,6 @@ from btorch.models.synapse import AlphaPSC
 from src.models.compat_synapse import HeterSynapsePSC
 # from btorch.models.synapse import HeterSynapseDualPSC  # optional dual-exp impl
 
-import ipdb
-
 
 def get_simple_id(df: pd.DataFrame) -> np.ndarray:
     return df.simple_id.to_numpy()

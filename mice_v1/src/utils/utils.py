@@ -26,8 +26,6 @@ from btorch.utils.yaml_utils import save_yaml
 
 from src.models.glif_synapse import *
 
-import ipdb
-
 #from . import sim_vis
 #from . import branching_ratio_analysis
 #from . import glif_synapse

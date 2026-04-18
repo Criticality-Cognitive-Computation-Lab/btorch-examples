@@ -501,7 +501,7 @@ if __name__ == "__main__":
     # app = SNNVisualizer(network_path = "/home/liuxingyu/mice_unnamed_torch_dev/output_networks/x_2000_2200_z_2200_2400_Total_4166_HybridGu_eemu1_eesig1.0_eimu1_eisig1.0_iimu1_iisig1.0_ie1.0",
     #     simulation_path = "/home/liuxingyu/mice_unnamed_torch_dev/outputs/2026-01-18/14-03-50/eemu1_eesig1.0_eimu1_eisig1.0_iimu1_iisig1.0_ie1.0/simulation_output"
     # ) 
-    app = SNNVisualizer(network_path = "/home/liuxingyu/btorch-examples/mice_v1/tutorial_outputs/2026-04-15/21-49-12/tutorial_assets/connectome",
-        simulation_path = "/home/liuxingyu/btorch-examples/mice_v1/tutorial_outputs/2026-04-15/21-49-12/simulation_output"
+    app = SNNVisualizer(network_path = "/home/liuxingyu/btorch-examples/mice_v1/tutorial_outputs/2026-04-18/11-24-51/tutorial_assets/connectome",
+        simulation_path = "/home/liuxingyu/btorch-examples/mice_v1/tutorial_outputs/2026-04-18/11-24-51/simulation_output"
     ) 
     app.run()

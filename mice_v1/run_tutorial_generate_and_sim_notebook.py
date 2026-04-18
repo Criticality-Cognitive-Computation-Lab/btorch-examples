@@ -16,7 +16,6 @@ from src.utils.dataloader import create_dataloaders
 from src.utils.device import detect_device
 from src.utils.other import set_seed, setup_logging
 
-import ipdb
 
 
 def _ensure_dir(path: Path) -> Path:
