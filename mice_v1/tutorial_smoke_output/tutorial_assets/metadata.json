@@ -1,6 +1,0 @@
-{
-  "n_neurons": 100,
-  "n_connections": 4195,
-  "conn_path": "/home/liuxingyu/btorch-examples/mice_v1/tutorial_smoke_output/tutorial_assets/connectome",
-  "glif_dir": "/home/liuxingyu/btorch-examples/mice_v1/tutorial_smoke_output/tutorial_assets/glif_models"
-}

@@ -40,6 +40,12 @@ nsight_report*
 /outputs/
 /swanlog/
 
+# mice_v1 generated outputs
+/mice_v1/notebook_outputs/
+/mice_v1/outputs/
+/mice_v1/tutorial_outputs/
+/mice_v1/tutorial_smoke_output/
+
 .kilocode
 .kilo
 .agent

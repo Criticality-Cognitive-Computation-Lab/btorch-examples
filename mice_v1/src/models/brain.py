@@ -8,7 +8,9 @@ from btorch.utils.dict_utils import unflatten_dict
 from btorch.models.neurons.glif import GLIF3
 from btorch.models.rnn import RecurrentNN
 from btorch.models.shape import expand_leading_dims
-from btorch.models.synapse import AlphaPSC, HeterSynapsePSC#, HeterSynapseDualPSC #, GLIFAlphaPSCFull
+from btorch.models.synapse import AlphaPSC
+from src.models.compat_synapse import HeterSynapsePSC
+# from btorch.models.synapse import HeterSynapseDualPSC  # optional dual-exp impl
 
 import ipdb
 
@@ -156,51 +158,21 @@ class FlyBrain(torch.nn.Module):
                 synapse = AlphaPSC(n_neuron=neuron_args["n_neuron"], **synapse_args)
             else:
                 synapse = AlphaPSC(**synapse_args)
-        # elif synapse_module_type in [GLIFAlphaPSCFull]:
-        #     print(f"synapse_module_type: {synapse_module_type}")
-        #     print(f"synapse_args: {synapse_args}")
-        #     # For GLIFAlphaPSC variants, we need tau_syn_matrix instead of tau_syn
-        #     synapse_args_glif = synapse_args.copy()
-        #     if "tau_syn_matrix" not in synapse_args_glif:
-        #         print(f"Warning: tau_syn_matrix is not provided, creating it from tau_syn")
-        #         # If tau_syn_matrix is not provided, create it from tau_syn
-        #         tau_syn = synapse_args_glif.get("tau_syn")
-        #         if isinstance(tau_syn, torch.Tensor) and tau_syn.dim() == 1:
-        #             # Convert 1D tau_syn to matrix by broadcasting
-        #             n_neuron = neuron_args["n_neuron"]
-        #             tau_syn_matrix = tau_syn.unsqueeze(0).expand(n_neuron, n_neuron)
-        #             synapse_args_glif["tau_syn_matrix"] = tau_syn_matrix
-        #         else:
-        #             # Scalar tau_syn - create uniform matrix
-        #             n_neuron = neuron_args["n_neuron"]
-        #             tau_syn_matrix = torch.full((n_neuron, n_neuron), tau_syn)
-        #             synapse_args_glif["tau_syn_matrix"] = tau_syn_matrix
-            
-            # Note: For GLIFAlphaPSCFull we no longer replace the linear layer.
-            # The connection-specific tau scaling is handled inside GLIFAlphaPSCFull.
-            
-            # synapse = synapse_module_type(n_neuron=neuron_args["n_neuron"], **synapse_args_glif)
-        elif synapse_module_type is HeterSynapsePSC:
-            # 其他自定义突触（如 HeterSynapsePSC）：
-            # 若未显式提供 n_neuron，则注入；否则尊重外部参数，避免重复传参
+        elif getattr(synapse_module_type, "__name__", "") == "HeterSynapsePSC":
+            # 兼容 main/mice 两个分支：
+            # - 即使外部传入的是 btorch.main 的 HeterSynapsePSC，
+            #   也统一使用本地 compat 包装类来兼容 receptor_is_exc 和 psc_e/psc_i。
+            synapse_cls = HeterSynapsePSC
             if "n_neuron" not in synapse_args:
-                #breakpoint()
-                synapse = synapse_module_type(n_neuron=neuron_args["n_neuron"], **synapse_args)
+                synapse = synapse_cls(n_neuron=neuron_args["n_neuron"], **synapse_args)
             else:
-                #breakpoint()
-                synapse = synapse_module_type(**synapse_args)
+                synapse = synapse_cls(**synapse_args)
         
-        # elif synapse_module_type is HeteroDoubleExponentialPSC:
-        #     # 使用HeteroDoubleExponentialPSC，传递tau_rise_matrix和tau_decay_matrix
-        #     synapse = synapse_module_type(n_neuron=neuron_args["n_neuron"], **synapse_args)
-        # elif synapse_module_type is HeteroDualExponentialPSC:
-        #     # 使用HeteroDualExponentialPSC，传递tau_dual_rise_matrix和tau_dual_decay_matrix
-        #     synapse = synapse_module_type(n_neuron=neuron_args["n_neuron"], **synapse_args)
-        elif synapse_module_type is HeterSynapseDualPSC:
-            if "n_neuron" not in synapse_args:
-                synapse = synapse_module_type(n_neuron=neuron_args["n_neuron"], **synapse_args)
-            else:
-                synapse = synapse_module_type(**synapse_args)
+        # elif synapse_module_type is HeterSynapseDualPSC:
+        #     if "n_neuron" not in synapse_args:
+        #         synapse = synapse_module_type(n_neuron=neuron_args["n_neuron"], **synapse_args)
+        #     else:
+        #         synapse = synapse_module_type(**synapse_args)
         else:
             raise NotImplementedError(f"Unsupported synapse module type: {synapse_module_type}")
 
@@ -211,7 +183,7 @@ class FlyBrain(torch.nn.Module):
         state_names = ["neuron.v", "neuron.Iasc", "synapse.psc"]
         # 不依赖 hasattr（MemoryModule 的 register_memory 可能不直接暴露为属性），
         # 对已知支持 E/I 拆分的实现，直接加入对应状态名
-        if isinstance(synapse, HeterSynapsePSC) or isinstance(synapse, HeterSynapseDualPSC):
+        if isinstance(synapse, HeterSynapsePSC):
             state_names.extend(["synapse.psc_e", "synapse.psc_i"])
 
         state_names.extend(["synapse.psc_e_all", "synapse.psc_all"])

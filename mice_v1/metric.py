@@ -94,16 +94,16 @@ def compute_dynamics_metrics(spikes, dt=1.0):
     window = max(10, min(100 if T > 200 else T // 2, T - 1))
 
     fano_values, _ = fano(spikes, window=window)
-    fano = np.nanmean(fano_values, axis=0)
+    fano_mean = np.nanmean(fano_values, axis=0)
 
     kurt_values, _ = kurtosis(spikes, window=window)
-    kurt = np.nanmean(kurt_values, axis=0)
+    kurt_mean = np.nanmean(kurt_values, axis=0)
     return pd.DataFrame(
         {
             "rate_hz": rate,
             "cv": cv,
-            "fano": fano,
-            "kurtosis": kurt,
+            "fano": fano_mean,
+            "kurtosis": kurt_mean,
         }
     )
 

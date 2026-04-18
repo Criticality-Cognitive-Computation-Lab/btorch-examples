@@ -1,6 +1,0 @@
-{
-  "n_neurons": 100,
-  "n_connections": 4195,
-  "conn_path": "notebook_outputs/tutorial_assets/connectome",
-  "glif_dir": "notebook_outputs/tutorial_assets/glif_models"
-}
