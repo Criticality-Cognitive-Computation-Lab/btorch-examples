@@ -13,7 +13,7 @@ def save_checkpoint(
     path: str | Path,
 ) -> None:
     """
-    Save checkpoint with model state, optimizer state, and memory reset values.
+    Save checkpoint with model state, optimizer state, and memory snapshots.
 
     Memory reset values are stored separately since dynamic buffers are excluded
     from state_dict().
@@ -27,6 +27,7 @@ def save_checkpoint(
         "epoch": epoch,
         "best_acc": best_acc,
         "memories_rv": functional.named_memory_reset_values(model),
+        "memory_values": functional.named_memory_values(model),
     }
 
     torch.save(checkpoint, path)
@@ -37,6 +38,7 @@ def load_checkpoint(
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer | None = None,
     device: str = "cuda",
+    restore_memory_values: bool = False,
 ) -> tuple[int, float]:
     """
     Load checkpoint and restore model state.
@@ -63,6 +65,10 @@ def load_checkpoint(
     # Restore memory reset values
     if "memories_rv" in checkpoint:
         functional.set_memory_reset_values(model, checkpoint["memories_rv"])
+
+    # Optional exact runtime-state restoration
+    if restore_memory_values and "memory_values" in checkpoint:
+        functional.set_memory_values(model, checkpoint["memory_values"])
 
     # Load optimizer state
     if optimizer is not None and "optimizer_state_dict" in checkpoint:

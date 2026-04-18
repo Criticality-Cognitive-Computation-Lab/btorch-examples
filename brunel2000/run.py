@@ -7,7 +7,7 @@ import torch
 import yaml
 from omegaconf import OmegaConf
 
-from btorch.models import environ, functional
+from btorch.models import environ
 
 from brunel2000.config import BrunelConfig
 from brunel2000.simulate import run_simulation
@@ -50,9 +50,6 @@ def main():
 
     with environ.context(dt=dt):
         model = config.model.build_model(dt_ms=dt, device=str(device))
-
-    functional.init_net_state(model.rnn, batch_size=1, device=str(device))
-    model.reset_state(batch_size=1)
 
     result = run_simulation(model, config, seed=config.sim.seed)
 

@@ -40,7 +40,12 @@ class GRUBaseline(nn.Module):
         multiplier = 2 if bidirectional else 1
         self.output_linear = nn.Linear(hidden_size * multiplier, output_dim)
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, dict]:
+    def forward(
+        self,
+        x: torch.Tensor,
+        *,
+        return_sequence: bool = False,
+    ) -> tuple[torch.Tensor, dict]:
         """
         Args:
             x: (T, batch, input_dim) input
@@ -61,13 +66,18 @@ class GRUBaseline(nn.Module):
         # Average over time and apply output layer
         avg_response = response.mean(dim=0)  # (batch, hidden)
         output = self.output_linear(avg_response)
+        sequence_output = self.output_linear(gru_out)
+
+        if return_sequence:
+            output = sequence_output
 
         # Dummy states for compatibility
         states = {
-            "spikes": torch.zeros_like(gru_out[..., 0]),  # (T, batch)
+            "spikes": torch.zeros_like(gru_out),
             "voltage": gru_out,  # Use GRU output as proxy
             "psc": gru_out,
             "filtered_spikes": gru_out,
+            "sequence_output": sequence_output,
         }
 
         return output, states

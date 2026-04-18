@@ -6,38 +6,45 @@ import scipy.sparse
 from btorch.connectome.connection import make_hetersynapse_conn
 
 
+def _sample_without_self(
+    rng: np.random.Generator,
+    start: int,
+    stop: int,
+    size: int,
+    post: int,
+) -> np.ndarray:
+    candidates = np.arange(start, stop, dtype=np.int64)
+    if start <= post < stop:
+        candidates = candidates[candidates != post]
+    return rng.choice(candidates, size=size, replace=False)
+
+
 def build_model_a_conn(
     n_e: int, n_i: int, c_e: int, c_i: int, j: float, g: float, dt_ms: float, seed: int
 ) -> scipy.sparse.coo_array:
     """Build sparse recurrent weight matrix for Model A.
 
     Each neuron receives c_e random E inputs at +J and c_i random I inputs at
-    -g*J. No self-connections. Weights are scaled by 1/dt_ms to match the
-    paper's continuous-time dynamics in a discrete-time simulation.
+    -g*J. No self-connections.
     """
     rng = np.random.default_rng(seed)
     n_neuron = n_e + n_i
-    scale = 1.0 / dt_ms
     rows, cols, data = [], [], []
 
     for post in range(n_neuron):
         # E inputs
-        pre_e = rng.choice(n_e, size=c_e, replace=False)
+        pre_e = _sample_without_self(rng, 0, n_e, c_e, post)
         for pre in pre_e:
-            if pre == post:
-                continue
             rows.append(pre)
             cols.append(post)
-            data.append(j * scale)
+            data.append(j)
 
         # I inputs
-        pre_i = rng.choice(range(n_e, n_neuron), size=c_i, replace=False)
+        pre_i = _sample_without_self(rng, n_e, n_neuron, c_i, post)
         for pre in pre_i:
-            if pre == post:
-                continue
             rows.append(pre)
             cols.append(post)
-            data.append(-g * j * scale)
+            data.append(-g * j)
 
     return scipy.sparse.coo_array((data, (rows, cols)), shape=(n_neuron, n_neuron))
 
@@ -77,7 +84,6 @@ def build_model_b_conn(
         }
     )
 
-    scale = 1.0 / dt_ms
     max_delays = {
         ("E", "E"): d_ee_ms,
         ("E", "I"): d_ei_ms,
@@ -90,26 +96,24 @@ def build_model_b_conn(
     for post in range(n_neuron):
         post_type = "E" if post < n_e else "I"
 
-        # E inputs (always excitatory)
-        pre_e = rng.choice(n_e, size=c_e, replace=False)
+        # E inputs: E->E has J_E, E->I has J_I (paper Model B)
+        pre_e = _sample_without_self(rng, 0, n_e, c_e, post)
         for pre in pre_e:
-            if pre == post:
-                continue
+            e_weight = j_e if post_type == "E" else j_i
             rows.append(pre)
             cols.append(post)
-            weights.append(j_e * scale)
+            weights.append(e_weight)
             max_d = max_delays[("E", post_type)]
             delays_ms.append(rng.uniform(0.0, max_d))
 
-        # I inputs (inhibitory)
-        pre_i = rng.choice(range(n_e, n_neuron), size=c_i, replace=False)
+        # I inputs: I->E has -g_E*J_E, I->I has -g_I*J_I (paper Model B)
+        pre_i = _sample_without_self(rng, n_e, n_neuron, c_i, post)
         for pre in pre_i:
-            if pre == post:
-                continue
+            base_j = j_e if post_type == "E" else j_i
             g_val = g_e if post_type == "E" else g_i
             rows.append(pre)
             cols.append(post)
-            weights.append(-g_val * j_i * scale)
+            weights.append(-g_val * base_j)
             max_d = max_delays[("I", post_type)]
             delays_ms.append(rng.uniform(0.0, max_d))
 

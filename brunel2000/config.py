@@ -4,12 +4,12 @@ from dataclasses import dataclass, field
 from typing import Literal, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from brunel2000.model import ModelRSNN
+    from btorch.models.rnn import RecurrentNN
 
 
 @dataclass
 class ModelConfig:
-    def build_model(self, dt_ms: float, device: str = "cpu") -> "ModelRSNN":
+    def build_model(self, dt_ms: float, device: str = "cpu") -> "RecurrentNN":
         raise NotImplementedError
 
 
@@ -29,18 +29,20 @@ class ModelAConfig(ModelConfig):
     tau_ms: float = 20.0
     tau_ref_ms: float = 2.0
     theta: float = 20.0
-    v_reset: float = 0.0
-    tau_syn_ms: float = 5.0
+    v_reset: float = 10.0
+    # Use a very small exponential PSC time constant so ExpPSC approximates
+    # delta-like synaptic current injection from Brunel (2000).
+    tau_syn_ms: float = 0.5
     nu_ext_hz: float = 20.0
 
-    def build_model(self, dt_ms: float, device: str = "cpu") -> "ModelRSNN":
+    def build_model(self, dt_ms: float, device: str = "cpu") -> "RecurrentNN":
         from btorch.models import environ
         from btorch.models.linear import SparseConn
         from btorch.models.neurons import LIF
+        from btorch.models.rnn import RecurrentNN
         from btorch.models.synapse import DelayedPSC, ExponentialPSC
 
         from brunel2000.connection import build_model_a_conn
-        from brunel2000.model import ModelRSNN
 
         n_e = int(self.n_neurons * self.n_e_ratio)
         n_i = self.n_neurons - n_e
@@ -69,7 +71,7 @@ class ModelAConfig(ModelConfig):
             )
             base_psc = ExponentialPSC(
                 n_neuron=self.n_neurons,
-                tau_syn=self.tau_syn_ms,
+                tau_syn=max(self.tau_syn_ms, dt_ms),
                 linear=linear,
             )
             psc = DelayedPSC(
@@ -78,7 +80,12 @@ class ModelAConfig(ModelConfig):
                 use_circular_buffer=True,
             )
 
-        model = ModelRSNN(neuron, psc)
+        model = RecurrentNN(
+            neuron=neuron,
+            synapse=psc,
+            step_mode="m",
+            update_state_names=("neuron.v", "synapse.psc"),
+        )
         model.to(device)
         return model
 
@@ -101,29 +108,30 @@ class ModelBConfig(ModelConfig):
     tau_i_ms: float = 10.0
     tau_ref_ms: float = 2.0
     theta: float = 20.0
-    v_reset: float = 0.0
+    v_reset: float = 10.0
 
     d_ee_ms: float = 4.0
     d_ei_ms: float = 4.0
     d_ie_ms: float = 4.0
     d_ii_ms: float = 4.0
 
-    tau_syn_e_ms: float = 5.0
-    tau_syn_i_ms: float = 5.0
+    # Keep synapses fast to stay close to delta-shot-current formulation.
+    tau_syn_e_ms: float = 0.3
+    tau_syn_i_ms: float = 0.5
 
     nu_e_ext_hz: float = 15.0
     nu_i_ext_hz: float = 15.0
 
-    def build_model(self, dt_ms: float, device: str = "cpu") -> "ModelRSNN":
+    def build_model(self, dt_ms: float, device: str = "cpu") -> "RecurrentNN":
         import torch
 
         from btorch.models import environ
         from btorch.models.linear import SparseConn
         from btorch.models.neurons import LIF
+        from btorch.models.rnn import RecurrentNN
         from btorch.models.synapse import ExponentialPSC, HeterSynapsePSC
 
         from brunel2000.connection import build_model_b_conn
-        from brunel2000.model import ModelRSNN
 
         n_e = int(self.n_neurons * self.n_e_ratio)
         n_i = self.n_neurons - n_e
@@ -165,11 +173,14 @@ class ModelBConfig(ModelConfig):
                 c_m=c_m,
             )
 
-            tau_syn_2d = torch.full((self.n_neurons, n_receptor), self.tau_syn_e_ms)
+            tau_syn_2d = torch.full(
+                (self.n_neurons, n_receptor),
+                max(self.tau_syn_e_ms, dt_ms),
+            )
             post_types = receptor_idx["post_receptor_type"].values
             i_cols_i = [i for i, post_type in enumerate(post_types) if post_type == "I"]
             if i_cols_i:
-                tau_syn_2d[:, i_cols_i] = self.tau_syn_i_ms
+                tau_syn_2d[:, i_cols_i] = max(self.tau_syn_i_ms, dt_ms)
             tau_syn = tau_syn_2d.T.flatten()
 
             synapse = HeterSynapsePSC(
@@ -183,7 +194,12 @@ class ModelBConfig(ModelConfig):
                 use_circular_buffer=True,
             )
 
-        model = ModelRSNN(neuron, synapse)
+        model = RecurrentNN(
+            neuron=neuron,
+            synapse=synapse,
+            step_mode="m",
+            update_state_names=("neuron.v", "synapse.psc"),
+        )
         model.to(device)
         return model
 
