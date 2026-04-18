@@ -4,8 +4,6 @@ import torchvision
 
 from torch.utils import data
 
-import ipdb
-
 class PoissonNoiseDataset(data.Dataset):
     """模拟数据集类，生成泊松噪声脉冲序列。
     

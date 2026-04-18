@@ -8,8 +8,6 @@ import scipy.sparse
 from btorch import connectome
 from btorch.connectome import augment, connection
 from btorch.utils import hdf5_utils, pandas_utils
-import ipdb
-
 
 def save_conn_mats(conn_mats_h5, conn_mats: dict):
     data = {}

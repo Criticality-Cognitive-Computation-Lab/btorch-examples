@@ -19,8 +19,6 @@ import torch.nn.functional as F
 #from .sim import load_and_preprocess_mice
 from btorch.models.constrain import HasConstraint
 
-import ipdb
-
 # Import rate regularization functions
 # from .rate_regularization import (
 #     calculate_laminar_rate_loss,

@@ -9,8 +9,6 @@ from btorch.analysis.metrics import select_on_metric
 from btorch.analysis.voltage import voltage_overshoot
 from src.utils.other import simple_id_to_root_id_func
 
-import ipdb
-
 
 def _should_close_figures(cfg):
     """Close figures by default, but keep them open for notebook-style inline display."""
