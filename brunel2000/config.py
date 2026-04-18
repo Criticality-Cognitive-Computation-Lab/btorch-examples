@@ -219,7 +219,7 @@ class SimConfig:
 class BrunelConfig:
     """Top-level configuration with model union."""
 
-    model: ModelConfig = field(default_factory=ModelAConfig)
+    model: ModelAConfig | ModelBConfig = field(default_factory=ModelAConfig)
     sim: SimConfig = field(default_factory=SimConfig)
     case_name: str | None = None
 
