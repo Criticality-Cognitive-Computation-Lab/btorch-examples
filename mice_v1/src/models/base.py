@@ -11,7 +11,6 @@ from src.utils.utils import load_neuron_args, load_synapse_args
 from src.models import brain # 你的 flybrain 定义
 from torch.nn import functional as F
 from src.utils.other import is_train_mode
-import ipdb
 
 LOGGER = logging.getLogger(__name__)
 
